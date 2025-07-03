@@ -1,79 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <raylib.h>
-#include <Eigen/Dense>
- 
-using Eigen::MatrixXd;
+#include <Eigen/Core>
 
-#define L 600
-#define N 10
-#define D (L/N)
+#include "q.h"
 
-enum Direction {
-    UP,
-    DOWN,
-    RIGHT,
-    LEFT,
-};
+#include "agent_body.h"
+#include "goal.h"
 
-class Agent {
-    public:
-        Vector2 pos;
-        Agent(int, int);
-
-        void move(std::vector<Direction>, int);
-        void draw();
-
-    private:
-        void step(Direction);
-};
-
-Agent::Agent(int x, int y) {
-    pos.x = x;
-    pos.y = y;
-}
-
-void Agent::step(Direction d) {
-    switch (d) {
-        case UP:
-            pos.y -= D;
-            break;
-        case DOWN:
-            pos.y += D;
-            break;
-        case RIGHT:
-            pos.x += D;
-            break;
-        case LEFT:
-            pos.x -= D;
-            break;
-    }
-}
-
-void Agent::move(std::vector<Direction> moves, int time) {
-    step(moves[time % moves.size()]);
-}
-
-void Agent::draw() {
-    DrawRectangle(pos.x, pos.y, D, D, RED);
-}
-
-class Goal {
-    public:
-        Vector2 pos;
-        Goal(int, int);
-
-        void draw();
-};
-
-Goal::Goal(int x, int y) {
-    pos.x = x;
-    pos.y = y;
-}
-
-void Goal::draw() {
-    DrawRectangle(pos.x, pos.y, D, D, GREEN);
-}
 
 void draw_grid() {
     for (int i=0; i<N; i++) {
@@ -82,34 +16,92 @@ void draw_grid() {
     }
 }
 
+double get_state(int x, int y) {
+    return (double) (x * 10.f + y);
+}
+
 
 int main() {
-    InitWindow(L, L, "RL");
-    SetTargetFPS(30);
+    std::srand(time(0));
 
-    std::vector<Direction> moves = {DOWN, RIGHT, UP, LEFT};
+    // InitWindow(L, L, "RL");
+    // SetTargetFPS(30);
 
-    Agent a(0, 0);
-    Goal g(L-D, L-D);
+    // std::vector<Actions_set> moves = {DOWN, RIGHT, UP, LEFT};
 
-    int time = 0; 
+    // Agent_body agent_body(3, 3);
+    // Goal goal(9, 9);
 
-    while (!WindowShouldClose()) {
-        a.move(moves, time);
+    // int time = 0; 
 
-        BeginDrawing();
-        ClearBackground(BLACK);
+    // while (!WindowShouldClose()) {
+    //     agent_body.move(moves, time);
 
-        a.draw();
-        g.draw();
+    //     BeginDrawing();
+    //     ClearBackground(BLACK);
 
-        draw_grid();
 
-        EndDrawing();
+    //     DrawRectangle(agent_body.pos.x, agent_body.pos.y, D, D, RED);
+    //     DrawRectangle(goal.pos.x, goal.pos.y, D, D, GREEN);
 
-        WaitTime(0.5);
-        time++;
+    //     draw_grid();
+
+    //     EndDrawing();
+
+    //     WaitTime(0.5);
+    //     time++;
+    // }
+    
+    Agent_body agent_body(3, 3);
+    Goal goal(9, 9);
+
+    const double gamma = 0.99;
+    const double eps = 0.2;
+    const double lr = 3e-4;
+
+    const int n_states  = 100;
+    const int n_actions = 4;
+
+    const int epochs = 10;
+
+    Agent agent(gamma, eps, lr, n_states, n_actions);
+
+    for (int i=0; i<epochs; i++) {
+        int x = agent_body.pos.x / D;
+        int y = agent_body.pos.y / D;
+
+        double state = get_state(x, y);
+        double goal_state = get_state(goal.pos.x / D, goal.pos.y / D);
+
+        int steps = 0;
+        while (state != goal_state && steps < 25) {
+            double action = agent.select_action(state);
+            double next_state = agent.get_next_state(state, action);
+
+            double reward = 0.f;
+            if (next_state == goal_state) {
+                reward = 1.f;
+            }
+
+            // std::cout << state << ", " << next_state << "\n";
+            if (next_state <= 0.f) {
+                reward = -1.f;
+                next_state = 1.f;
+            }
+
+            else if (next_state >= 100.f) {
+                reward = -1.f;
+                next_state = 99.f;
+            }
+            
+            agent.learn(state, action, next_state, reward);
+
+            state = next_state;
+            steps++;
+        }
     }
+
+    std::cout << agent.q_table << "\n";
 
     return 0;
 }
