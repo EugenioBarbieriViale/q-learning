@@ -14,11 +14,9 @@ class Agent_body {
         Vector2 pos;
         Agent_body(int, int);
 
-        void move(std::vector<Actions_set>, int);
+        Actions_set translate(int);
+        void move(Actions_set);
         void draw();
-
-    private:
-        void step(Actions_set);
 };
 
 Agent_body::Agent_body(int x, int y) {
@@ -26,8 +24,23 @@ Agent_body::Agent_body(int x, int y) {
     pos.y = y * D;
 }
 
-void Agent_body::step(Actions_set a) {
-    switch (a) {
+Actions_set Agent_body::translate(int action) {
+    switch (action) {
+        case 0:
+            return UP;
+        case 1:
+            return DOWN;
+        case 2:
+            return RIGHT;
+        case 3: 
+            return LEFT;
+        default:
+            return UP;
+    }
+}
+
+void Agent_body::move(Actions_set action) {
+    switch (action) {
         case UP:
             pos.y -= D;
             break;
@@ -41,8 +54,4 @@ void Agent_body::step(Actions_set a) {
             pos.x -= D;
             break;
     }
-}
-
-void Agent_body::move(std::vector<Actions_set> actions, int time) {
-    step(actions[time % actions.size()]);
 }

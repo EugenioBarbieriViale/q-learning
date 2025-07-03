@@ -1,4 +1,11 @@
+#define r (std::rand() % 10)
 #define R ((double) std::rand() / (RAND_MAX))
+
+
+double get_state(int x, int y) {
+    return (double) (x * 10.f + y);
+}
+
 
 class Agent {
     private:
@@ -12,7 +19,9 @@ class Agent {
 
         double get_next_state(double, double);
         double select_action(double);
+
         void learn(double, double, double, double);
+        void train(int);
 };
 
 Agent::Agent(double gamma, double eps, double lr, int n_states, int n_actions) {
@@ -53,15 +62,57 @@ double Agent::select_action(double state) {
     if (sample < eps) {
         int row, idx;
         double max_val = q_table.row(state).maxCoeff(&row, &idx);
-        return (double) idx;
+        return (double)idx;
     }
     
     else {
-        return std::rand() % 4;
+        return (double)(std::rand() % 4);
     }
 }
 
 void Agent::learn(double state, double action, double next_state, double reward) {
     double max_val = q_table.row(next_state).maxCoeff();
-    q_table(state, action) += lr * (reward + gamma * max_val - q_table(state, action));
+    q_table((int)state, (int)action) += lr * (reward + gamma * max_val - q_table((int)state, (int)action));
+}
+
+void Agent::train(int epochs) {
+    for (int i=0; i<epochs; i++) {
+        int ax = r;
+        int ay = r;
+
+        int gx = 5;
+        int gy = 5;
+
+        double state = get_state(ax, ay);
+        double goal_state = get_state(gx, gy);
+
+        int steps = 0;
+        while (state != goal_state && steps < 10) {
+            double action = select_action(state);
+            double next_state = get_next_state(state, action);
+
+            double reward = 0.f;
+            if (next_state == goal_state) {
+                std::cout << i << ": YESS------------------------\n";
+                reward = 1.f;
+            }
+
+            if (next_state <= 0.f) {
+                reward = -1.f;
+                next_state = 1.f;
+            }
+
+            else if (next_state >= 100.f) {
+                reward = -1.f;
+                next_state = 99.f;
+            }
+            
+            learn(state, action, next_state, reward);
+
+            state = next_state;
+            steps++;
+        }
+    }
+
+    std::cout << q_table << "\n";
 }
