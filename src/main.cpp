@@ -29,8 +29,8 @@ int main() {
 
     const int epochs = 10000;
 
-    const int gx = 5;
-    const int gy = 5;
+    const int gx = 8;
+    const int gy = 7;
 
     Agent agent(gamma, eps, lr, n_states, n_actions);
     agent.train(epochs, gx, gy);
