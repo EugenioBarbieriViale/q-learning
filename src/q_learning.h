@@ -113,7 +113,7 @@ double Agent::train(int epochs) {
             }
 
             else {
-                double dist = sqrt(pow((ax - gx), 2) + pow((ay - gy), 2)) / (10.f * sqrt(2));
+                double dist = (std::abs(ax - gx) + std::abs(ay - gy)) / 20.f;
                 reward = -0.05 * dist;
             }
 
