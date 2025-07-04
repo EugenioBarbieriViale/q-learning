@@ -3,7 +3,7 @@
 #include <raylib.h>
 #include <Eigen/Core>
 
-#include "q.h"
+#include "q_learning.h"
 
 #include "agent_body.h"
 #include "goal.h"
@@ -21,26 +21,29 @@ int main() {
     std::srand(time(0));
 
     const double gamma = 0.95;
-    const double eps = 0.6;
+    const double eps = 0.2;
     const double lr = 0.8;
 
     const int n_states  = 100;
     const int n_actions = 4;
 
-    const int epochs = 1000;
+    const int epochs = 10000;
+
+    const int gx = 5;
+    const int gy = 5;
 
     Agent agent(gamma, eps, lr, n_states, n_actions);
-    agent.train(epochs);
+    agent.train(epochs, gx, gy);
 
 
     InitWindow(L, L, "Q-Learning");
     SetTargetFPS(30);
 
     Agent_body agent_body(r, r);
-    Goal goal(5, 5);
+    Goal goal(gx, gy);
 
     while (!WindowShouldClose()) {
-        double state = get_state((int)agent_body.pos.x / D, (int)agent_body.pos.y / D);
+        int state = get_state((int)agent_body.pos.x / D, (int)agent_body.pos.y / D);
 
         int row, a;
         double max_val = agent.q_table.row(state).maxCoeff(&row, &a);
@@ -48,23 +51,25 @@ int main() {
         Actions_set m = agent_body.translate(a);
         agent_body.move(m);
 
-        if (agent_body.pos.x == goal.pos.x && agent_body.pos.y == goal.pos.y) {
-            agent_body.pos.x = r * D;
-            agent_body.pos.y = r * D;
-        }
-
 
         BeginDrawing();
         ClearBackground(BLACK);
 
-        DrawRectangle(agent_body.pos.x, agent_body.pos.y, D, D, RED);
         DrawRectangle(goal.pos.x, goal.pos.y, D, D, GREEN);
+        DrawRectangle(agent_body.pos.x, agent_body.pos.y, D, D, RED);
 
         draw_grid();
 
         EndDrawing();
 
-        WaitTime(0.5);
+        if (agent_body.pos.x == goal.pos.x && agent_body.pos.y == goal.pos.y) {
+            agent_body.pos.x = r * D;
+            agent_body.pos.y = r * D;
+
+            WaitTime(0.5);
+        }
+
+        WaitTime(0.3);
     }    
 
     return 0;
